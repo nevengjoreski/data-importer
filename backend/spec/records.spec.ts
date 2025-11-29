@@ -1,5 +1,6 @@
 import app from '../src/app';
 import Record from '../src/models/Record';
+import { rateLimiter } from '../src/middleware/rateLimiter';
 
 // Helper function to make requests
 async function makeRequest(path: string, options: RequestInit) {
@@ -8,18 +9,23 @@ async function makeRequest(path: string, options: RequestInit) {
 }
 
 describe('POST /api/records', () => {
+  beforeEach(async () => {
+    rateLimiter.reset();
+    await Record.destroy({ where: {} });
+  });
+
   describe('when creating a record with valid data', () => {
     it('should create a record with name, email, and company', async () => {
       const response = await makeRequest('/api/records', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          name: 'John Doe', 
+        body: JSON.stringify({
+          name: 'John Doe',
           email: 'john@example.com',
           company: 'Tech Corp'
         })
       });
-      
+
       expect(response.status).toBe(201);
       const body: any = await response.json();
       expect(body.success).toBe(true);
@@ -35,8 +41,8 @@ describe('POST /api/records', () => {
       const response = await makeRequest('/api/records', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          name: 'Jane Smith', 
+        body: JSON.stringify({
+          name: 'Jane Smith',
           email: 'jane@example.com',
           company: 'Another Corp'
         })
@@ -55,8 +61,8 @@ describe('POST /api/records', () => {
       const response1 = await makeRequest('/api/records', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          name: 'User One', 
+        body: JSON.stringify({
+          name: 'User One',
           email: 'user1@test.com',
           company: 'Company A'
         })
@@ -68,8 +74,8 @@ describe('POST /api/records', () => {
       const response2 = await makeRequest('/api/records', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          name: 'User Two', 
+        body: JSON.stringify({
+          name: 'User Two',
           email: 'user2@test.com',
           company: 'Company B'
         })
@@ -84,8 +90,8 @@ describe('POST /api/records', () => {
       const response = await makeRequest('/api/records', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          name: 'Test User', 
+        body: JSON.stringify({
+          name: 'Test User',
           email: 'Test@EXAMPLE.COM',
           company: 'Test Corp'
         })
@@ -102,7 +108,7 @@ describe('POST /api/records', () => {
       const response = await makeRequest('/api/records', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           email: 'test@example.com',
           company: 'Test Corp'
         })
@@ -118,7 +124,7 @@ describe('POST /api/records', () => {
       const response = await makeRequest('/api/records', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           name: 'Test User',
           company: 'Test Corp'
         })
@@ -134,7 +140,7 @@ describe('POST /api/records', () => {
       const response = await makeRequest('/api/records', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           name: 'Test User',
           email: 'test@example.com'
         })
@@ -150,7 +156,7 @@ describe('POST /api/records', () => {
       const response = await makeRequest('/api/records', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           name: 'Test User',
           email: 'invalid-email',
           company: 'Test Corp'
@@ -167,7 +173,7 @@ describe('POST /api/records', () => {
       await makeRequest('/api/records', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           name: 'First User',
           email: 'duplicate@test.com',
           company: 'Company A'
@@ -177,7 +183,7 @@ describe('POST /api/records', () => {
       const response = await makeRequest('/api/records', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           name: 'Second User',
           email: 'duplicate@test.com',
           company: 'Company B'
@@ -196,7 +202,7 @@ describe('POST /api/records', () => {
       const response = await makeRequest('/api/records', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           name: 'Test User',
           email: 'format@test.com',
           company: 'Test Corp'

@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { ValidationError, UniqueConstraintError } from 'sequelize';
 import Record from './models/Record';
 import { rateLimiter } from './middleware/rateLimiter';
+import importRoutes from './importRoutes';
 
 const routes = new Hono();
 
@@ -31,10 +32,10 @@ routes.post('/records', async (c) => {
   // NOTE: Rate limiter simulates external API constraints (4 burst, 2/sec steady)
   if (!rateLimiter.canProcess()) {
     const retryAfter = rateLimiter.getRetryAfter();
-    return c.json({ 
+    return c.json({
       error: 'Rate limit exceeded',
       message: 'Too many requests. Please try again later.',
-      retryAfter 
+      retryAfter
     }, 429);
   }
 
@@ -46,10 +47,10 @@ routes.post('/records', async (c) => {
       return c.json({ error: 'Validation failed', message: validationError }, 400);
     }
 
-    const record = await Record.create({ 
-      name: name.trim(), 
-      email: email.trim().toLowerCase(), 
-      company: company.trim() 
+    const record = await Record.create({
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      company: company.trim()
     });
 
     return c.json({
@@ -65,26 +66,49 @@ routes.post('/records', async (c) => {
 
   } catch (error) {
     console.error('Error creating record:', error);
-    
+
     if (error instanceof UniqueConstraintError) {
-      return c.json({ 
+      return c.json({
         error: 'Constraint violation',
-        message: 'Record already exists' 
+        message: 'Record already exists'
       }, 409);
     }
-    
+
     if (error instanceof ValidationError) {
-      return c.json({ 
+      return c.json({
         error: 'Validation failed',
         message: error.errors.map(e => e.message).join(', ')
       }, 400);
     }
-    
-    return c.json({ 
+
+    return c.json({
       error: 'Internal server error',
-      message: 'Failed to create record. Please try again later.' 
+      message: 'Failed to create record. Please try again later.'
     }, 500);
   }
 });
+
+import ImportJob from './models/ImportJob';
+
+// ... existing code ...
+
+routes.delete('/records', async (c) => {
+  try {
+    await Record.destroy({ where: {} });
+    await ImportJob.destroy({ where: {} });
+    return c.json({
+      success: true,
+      message: 'All records and job history cleared successfully'
+    }, 200);
+  } catch (error) {
+    console.error('Error clearing records:', error);
+    return c.json({
+      error: 'Internal server error',
+      message: 'Failed to clear records'
+    }, 500);
+  }
+});
+
+routes.route('/import', importRoutes);
 
 export default routes;
