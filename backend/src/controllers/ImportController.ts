@@ -82,7 +82,7 @@ export class ImportController {
         }
     }
 
-    static async startEnterpriseBatchImport(c: Context) {
+    static async startBatchImport(c: Context) {
         try {
             const csvPath = path.join(__dirname, '../../../frontend/src/import-data/test-data-1000.csv');
 
@@ -112,16 +112,16 @@ export class ImportController {
             return c.json({
                 success: true,
                 jobId: job.id,
-                message: 'Enterprise batch import started'
+                message: 'Batch import started'
             }, 202);
 
         } catch (error) {
-            console.error('Error starting enterprise batch import:', error);
+            console.error('Error starting batch import:', error);
             return c.json({ error: 'Internal server error' }, 500);
         }
     }
 
-    static async startEnterpriseStreamImport(c: Context) {
+    static async startStreamImport(c: Context) {
         try {
             const csvPath = path.join(__dirname, '../../../frontend/src/import-data/test-data-1000.csv');
 
@@ -139,11 +139,11 @@ export class ImportController {
             return c.json({
                 success: true,
                 jobId: job.id,
-                message: 'Enterprise stream import started'
+                message: 'Stream import started'
             }, 202);
 
         } catch (error) {
-            console.error('Error starting enterprise stream import:', error);
+            console.error('Error starting stream import:', error);
             return c.json({ error: 'Internal server error' }, 500);
         }
     }

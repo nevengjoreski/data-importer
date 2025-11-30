@@ -16,7 +16,7 @@ jasmine.loadConfig({
 // We need to use absolute paths or relative to this file
 try {
     require('./helpers/setup');
-    require('./services/EnterpriseImportService.spec');
+    require('./services/ImportService.spec');
 
     jasmine.execute();
 } catch (e) {

@@ -28,7 +28,7 @@ export const fetchImportJob = async (jobId: number): Promise<ImportJob> => {
 };
 
 export const startImportJob = async (): Promise<ImportJobResponse> => {
-    const response = await fetch(API_ENDPOINTS.IMPORT_TEST_DATA, {
+    const response = await fetch(API_ENDPOINTS.IMPORT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
     });
@@ -40,7 +40,7 @@ export const startImportJob = async (): Promise<ImportJobResponse> => {
 };
 
 export const startBatchImportJob = async (): Promise<ImportJobResponse> => {
-    const response = await fetch(API_ENDPOINTS.IMPORT_ENTERPRISE_BATCH, {
+    const response = await fetch(API_ENDPOINTS.IMPORT_BATCH, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
     });
@@ -52,7 +52,7 @@ export const startBatchImportJob = async (): Promise<ImportJobResponse> => {
 };
 
 export const startStreamImportJob = async (): Promise<ImportJobResponse> => {
-    const response = await fetch(API_ENDPOINTS.IMPORT_ENTERPRISE_STREAM, {
+    const response = await fetch(API_ENDPOINTS.IMPORT_STREAM, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
     });
