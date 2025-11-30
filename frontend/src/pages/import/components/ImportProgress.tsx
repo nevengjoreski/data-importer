@@ -2,7 +2,8 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Badge } from '../../../components/ui/badge';
 import { ImportJob } from '../../../types/import';
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, ArrowLeft } from 'lucide-react';
+import { useImport } from '../../../features/import/context/useImport';
 
 interface ImportProgressProps {
     job: ImportJob;
@@ -10,6 +11,7 @@ interface ImportProgressProps {
 
 export const ImportProgress: React.FC<ImportProgressProps> = ({ job }) => {
     const { t } = useTranslation();
+    const { clearStatus } = useImport();
     const progressPercentage = Math.round((job.processed_count / job.total_records) * 100);
     const successPercentage = Math.round((job.success_count / job.total_records) * 100);
     const failedPercentage = Math.round((job.failed_count / job.total_records) * 100);
@@ -23,8 +25,23 @@ export const ImportProgress: React.FC<ImportProgressProps> = ({ job }) => {
         }
     };
 
+    const isImporting = !['completed', 'failed'].includes(job.status);
+
     return (
         <div className="space-y-4">
+            {/* Back to Dashboard Button - shown during import */}
+            {isImporting && (
+                <div className="flex justify-start">
+                    <button
+                        onClick={clearStatus}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                        Back to Dashboard
+                    </button>
+                </div>
+            )}
+
             {/* Progress Bar Section */}
             <div className="space-y-2">
                 <div className="flex justify-between text-sm text-muted-foreground">
