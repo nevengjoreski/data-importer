@@ -1,7 +1,8 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { useTranslation } from 'react-i18next';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 
-import { ImportJob } from '../../types/import';
+import { ImportJob } from '../../../types/import';
 import { AlertCircle } from 'lucide-react';
 
 interface ImportErrorsProps {
@@ -9,6 +10,7 @@ interface ImportErrorsProps {
 }
 
 export const ImportErrors: React.FC<ImportErrorsProps> = ({ errors }) => {
+    const { t } = useTranslation();
     if (!errors || errors.length === 0) return null;
 
     return (
@@ -16,7 +18,7 @@ export const ImportErrors: React.FC<ImportErrorsProps> = ({ errors }) => {
             <CardHeader className="bg-destructive/10 pb-4">
                 <div className="flex items-center gap-2">
                     <AlertCircle className="h-5 w-5 text-destructive" />
-                    <CardTitle className="text-destructive">Import Errors ({errors.length})</CardTitle>
+                    <CardTitle className="text-destructive">{t('dashboard.errors.title', { count: errors.length })}</CardTitle>
                 </div>
             </CardHeader>
             <CardContent className="pt-6">
@@ -24,9 +26,9 @@ export const ImportErrors: React.FC<ImportErrorsProps> = ({ errors }) => {
                     <table className="w-full text-sm">
                         <thead className="bg-muted/50">
                             <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">#</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Record Data</th>
-                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Error Message</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">{t('dashboard.errors.columns.id')}</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">{t('dashboard.errors.columns.data')}</th>
+                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">{t('dashboard.errors.columns.message')}</th>
                             </tr>
                         </thead>
                         <tbody className="[&_tr:last-child]:border-0">
@@ -48,7 +50,7 @@ export const ImportErrors: React.FC<ImportErrorsProps> = ({ errors }) => {
                             {errors.length > 100 && (
                                 <tr>
                                     <td colSpan={3} className="p-4 text-center text-muted-foreground text-sm italic">
-                                        ... and {errors.length - 100} more errors not shown.
+                                        {t('dashboard.errors.more', { count: errors.length - 100 })}
                                     </td>
                                 </tr>
                             )}

@@ -1,0 +1,74 @@
+{
+  "app": {
+    "title": "Import Dashboard",
+    "loading": "Loading...",
+    "error": "Error",
+    "retry": "Retry",
+    "backendError": {
+      "title": "Backend Unavailable",
+      "message": "Cannot connect to the backend server. Please ensure it is running on port 4000.",
+      "retrying": "Retrying..."
+    }
+  },
+  "dashboard": {
+    "title": "Import Dashboard",
+    "emptyState": {
+      "title": "No Active Import",
+      "description": "Click the \"Start Import\" button above to begin processing 1000 test records."
+    },
+    "header": {
+      "title": "Import Dashboard",
+      "subtitle": "Manage and monitor data imports with real-time tracking",
+      "startImport": "Start Import (1000 Records)",
+      "importing": "Importing..."
+    },
+    "progress": {
+      "overall": "Overall Progress",
+      "processed": "{{current}} / {{total}} records processed",
+      "successful": "Successful",
+      "failed": "Failed"
+    },
+    "stats": {
+      "duplicates": "Duplicates",
+      "missing": "Missing Values",
+      "invalid": "Invalid Format",
+      "other": "Other Errors"
+    },
+    "errors": {
+      "title": "Import Errors ({{count}})",
+      "columns": {
+        "id": "#",
+        "data": "Record Data",
+        "message": "Error Message"
+      },
+      "more": "... and {{count}} more errors not shown."
+    },
+    "startImport": "Start Import",
+    "clearRecords": "Clear Records",
+    "importing": "Importing...",
+    "clearing": "Clearing...",
+    "noActiveJob": "No active import job",
+    "status": "Status",
+    "recordsProcessed": "Records Processed",
+    "success": "Success"
+  },
+  "history": {
+    "title": "Import History",
+    "noJobs": "No import jobs found.",
+    "columns": {
+      "id": "Job ID",
+      "status": "Status",
+      "total": "Total",
+      "processed": "Processed",
+      "success": "Success",
+      "failed": "Failed",
+      "createdAt": "Created At"
+    }
+  },
+  "status": {
+    "pending": "Pending",
+    "processing": "Processing",
+    "completed": "Completed",
+    "failed": "Failed"
+  }
+}

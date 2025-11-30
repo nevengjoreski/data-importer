@@ -1,46 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { useImport } from '../context/Import/useImport';
-
-interface ImportJob {
-    id: number;
-    status: 'pending' | 'processing' | 'completed' | 'failed';
-    total_records: number;
-    processed_count: number;
-    success_count: number;
-    failed_count: number;
-    created_at: string;
-}
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { useImport } from '../../../features/import/context/useImport';
+import { useImportHistory } from '../../../features/import/queries/useImport.queries';
 
 export const ImportHistory: React.FC = () => {
-
-    const [jobs, setJobs] = useState<ImportJob[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const { t } = useTranslation();
+    const { data: jobs, isLoading: loading, error } = useImportHistory();
     const { selectJob, activeJob } = useImport();
-
-    useEffect(() => {
-        const fetchJobs = async () => {
-            try {
-                const response = await fetch('http://localhost:4000/api/import');
-                const data = await response.json();
-
-                if (data.success) {
-                    setJobs(data.data);
-                } else {
-                    setError('Failed to fetch import history');
-                }
-            } catch (err) {
-                setError(err instanceof Error ? err.message : 'Unknown error');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchJobs();
-        // Poll every 5 seconds to update status
-        const interval = setInterval(fetchJobs, 5000);
-        return () => clearInterval(interval);
-    }, []);
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -58,27 +24,27 @@ export const ImportHistory: React.FC = () => {
     return (
         <div className="p-6 max-w-6xl mx-auto">
             <div className="bg-white rounded-lg shadow-lg p-6">
-                <h2 className="text-2xl font-bold mb-4">Import History</h2>
+                <h2 className="text-2xl font-bold mb-4">{t('history.title')}</h2>
 
-                {loading && <p className="text-gray-500">Loading...</p>}
-                {error && <p className="text-red-500">{error}</p>}
+                {loading && <p className="text-gray-500">{t('app.loading')}</p>}
+                {error && <p className="text-red-500">{(error).message}</p>}
 
-                {!loading && !error && jobs.length === 0 && (
-                    <p className="text-gray-500">No import jobs found.</p>
+                {!loading && !error && (!jobs || jobs.length === 0) && (
+                    <p className="text-gray-500">{t('history.noJobs')}</p>
                 )}
 
-                {!loading && !error && jobs.length > 0 && (
+                {!loading && !error && jobs && jobs.length > 0 && (
                     <div className="overflow-x-auto">
                         <table className="min-w-full">
                             <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Job ID</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Status</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Total</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Processed</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Success</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Failed</th>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Created At</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">{t('history.columns.id')}</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">{t('history.columns.status')}</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">{t('history.columns.total')}</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">{t('history.columns.processed')}</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">{t('history.columns.success')}</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">{t('history.columns.failed')}</th>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">{t('history.columns.createdAt')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
@@ -97,7 +63,7 @@ export const ImportHistory: React.FC = () => {
                                         <td className="px-4 py-3 text-sm font-medium text-gray-900">#{job.id}</td>
                                         <td className="px-4 py-3 text-sm">
                                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(job.status)}`}>
-                                                {job.status.toUpperCase()}
+                                                {t(`status.${job.status}`)}
                                             </span>
                                         </td>
                                         <td className="px-4 py-3 text-sm text-gray-700">{job.total_records}</td>

@@ -50,7 +50,8 @@ routes.post('/records', async (c) => {
     const record = await Record.create({
       name: name.trim(),
       email: email.trim().toLowerCase(),
-      company: company.trim()
+      company: company.trim(),
+      status: 'success' // Direct creation is success
     });
 
     return c.json({
@@ -88,26 +89,12 @@ routes.post('/records', async (c) => {
   }
 });
 
-import ImportJob from './models/ImportJob';
+import { ImportController } from './controllers/ImportController';
 
 // ... existing code ...
 
-routes.delete('/records', async (c) => {
-  try {
-    await Record.destroy({ where: {} });
-    await ImportJob.destroy({ where: {} });
-    return c.json({
-      success: true,
-      message: 'All records and job history cleared successfully'
-    }, 200);
-  } catch (error) {
-    console.error('Error clearing records:', error);
-    return c.json({
-      error: 'Internal server error',
-      message: 'Failed to clear records'
-    }, 500);
-  }
-});
+routes.delete('/records', ImportController.clearRecords);
+
 
 routes.route('/import', importRoutes);
 

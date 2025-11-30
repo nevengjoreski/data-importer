@@ -4,11 +4,7 @@ import ImportJob from '../models/ImportJob';
 import ImportError from '../models/ImportError';
 import { ValidationError } from 'sequelize';
 
-interface ImportRecordData {
-    name: string;
-    email: string;
-    company: string;
-}
+import { ImportRecordData } from '../types/import';
 
 export class ImportService {
     private static instance: ImportService;
@@ -70,7 +66,14 @@ export class ImportService {
             }
 
             // 3. Insert record
-            await Record.create(recordData as any);
+            await Record.create({
+                name: recordData.name,
+                email: recordData.email,
+                company: recordData.company,
+                status: 'success',
+                job_id: job.id,
+                response: { success: true, message: 'Imported via legacy flow', timestamp: new Date().toISOString() }
+            });
 
             // 4. Update stats (in memory only, saved in batch in processJob)
             job.processed_count += 1;

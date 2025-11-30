@@ -1,6 +1,7 @@
 import React from 'react';
-import { Badge } from '../ui/badge';
-import { ImportJob } from '../../types/import';
+import { useTranslation } from 'react-i18next';
+import { Badge } from '../../../components/ui/badge';
+import { ImportJob } from '../../../types/import';
 import { CheckCircle2, XCircle } from 'lucide-react';
 
 interface ImportProgressProps {
@@ -8,11 +9,12 @@ interface ImportProgressProps {
 }
 
 export const ImportProgress: React.FC<ImportProgressProps> = ({ job }) => {
+    const { t } = useTranslation();
     const progressPercentage = Math.round((job.processed_count / job.total_records) * 100);
     const successPercentage = Math.round((job.success_count / job.total_records) * 100);
     const failedPercentage = Math.round((job.failed_count / job.total_records) * 100);
 
-    const getStatusVariant = (status: ImportJob['status']) => {
+    const getStatusVariant = (status: ImportJob['status']): 'default' | 'destructive' | 'secondary' | 'outline' => {
         switch (status) {
             case 'completed': return 'default';
             case 'failed': return 'destructive';
@@ -26,7 +28,7 @@ export const ImportProgress: React.FC<ImportProgressProps> = ({ job }) => {
             {/* Progress Bar Section */}
             <div className="space-y-2">
                 <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>Overall Progress</span>
+                    <span>{t('dashboard.progress.overall')}</span>
                     <span>{progressPercentage}%</span>
                 </div>
 
@@ -45,7 +47,7 @@ export const ImportProgress: React.FC<ImportProgressProps> = ({ job }) => {
                 </div>
 
                 <p className="text-xs text-muted-foreground text-right">
-                    {job.processed_count} / {job.total_records} records processed
+                    {t('dashboard.progress.processed', { current: job.processed_count, total: job.total_records })}
                 </p>
             </div>
 
@@ -55,14 +57,14 @@ export const ImportProgress: React.FC<ImportProgressProps> = ({ job }) => {
                     <CheckCircle2 className="h-8 w-8 text-green-600" />
                     <div>
                         <p className="text-2xl font-bold text-green-700">{job.success_count}</p>
-                        <p className="text-xs text-green-600">Successful</p>
+                        <p className="text-xs text-green-600">{t('dashboard.progress.successful')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-red-50 rounded-lg border border-red-200">
                     <XCircle className="h-8 w-8 text-red-600" />
                     <div>
                         <p className="text-2xl font-bold text-red-700">{job.failed_count}</p>
-                        <p className="text-xs text-red-600">Failed</p>
+                        <p className="text-xs text-red-600">{t('dashboard.progress.failed')}</p>
                     </div>
                 </div>
             </div>
@@ -70,7 +72,7 @@ export const ImportProgress: React.FC<ImportProgressProps> = ({ job }) => {
             {/* Status Badge */}
             <div className="flex justify-end pt-2">
                 <Badge variant={getStatusVariant(job.status)} className="uppercase">
-                    {job.status}
+                    {t(`status.${job.status}`)}
                 </Badge>
             </div>
         </div>
