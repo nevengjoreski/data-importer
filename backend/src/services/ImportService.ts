@@ -9,9 +9,6 @@ import { z } from 'zod';
 import { ImportRecordData } from '../types/import';
 
 export class ImportService {
-    startImport(id: number, records: ImportRecordData[]) {
-        throw new Error('Method not implemented.');
-    }
     private static instance: ImportService;
 
     private constructor() { }

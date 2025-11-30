@@ -27,18 +27,6 @@ export const fetchImportJob = async (jobId: number): Promise<ImportJob> => {
     return data.data as ImportJob;
 };
 
-export const startImportJob = async (): Promise<ImportJobResponse> => {
-    const response = await fetch(API_ENDPOINTS.IMPORT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-    });
-    if (!response.ok) {
-        throw new Error('Failed to start import');
-    }
-    const data = await response.json();
-    return data;
-};
-
 export const startBatchImportJob = async (): Promise<ImportJobResponse> => {
     const response = await fetch(API_ENDPOINTS.IMPORT_BATCH, {
         method: 'POST',

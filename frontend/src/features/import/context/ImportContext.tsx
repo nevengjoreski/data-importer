@@ -1,14 +1,22 @@
-import React, { createContext, ReactNode } from 'react';
-import { ImportJob } from '../../../types/import';
-import { useImportJobStatus, useStartImport, useStartBatchImport, useStartStreamImport, useClearRecords } from '../../import/queries/useImport.queries';
+import React, { createContext, ReactNode, useMemo, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { ImportJob } from '../../../types/import';
+import {
+    useImportJobStatus,
+    useStartBatchImport,
+    useStartStreamImport,
+    useClearRecords
+} from '../../import/queries/useImport.queries';
 
+// --- Constants ---
+const NON_ACTIVE_STATUSES = ['completed', 'failed'] as const;
+
+// --- Types ---
 export interface ImportContextValue {
     activeJob: ImportJob | null;
     isImporting: boolean;
     isClearing: boolean;
     error: string | null;
-    startImport: () => Promise<void>;
     startBatchImport: () => Promise<void>;
     startStreamImport: () => Promise<void>;
     clearRecords: () => Promise<void>;
@@ -21,78 +29,108 @@ export const ImportContext = createContext<ImportContextValue | undefined>(undef
 export const ImportProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
-    const activeJobId = id ? Number.parseInt(id, 10) : null;
 
+    // Parse ID safely
+    const activeJobId = useMemo(() => (id ? Number.parseInt(id, 10) : null), [id]);
+
+    // --- Queries & Mutations ---
     const { data: activeJob, error: jobError } = useImportJobStatus(activeJobId);
-    const startImportMutation = useStartImport();
-    const startBatchImportMutation = useStartBatchImport();
-    const startStreamImportMutation = useStartStreamImport();
-    const clearRecordsMutation = useClearRecords();
 
-    const isImporting = (activeJob ? !['completed', 'failed'].includes(activeJob.status) : false) || startImportMutation.isPending || startBatchImportMutation.isPending || startStreamImportMutation.isPending;
-    const isClearing = clearRecordsMutation.isPending;
-    const error = (jobError as Error)?.message || (startImportMutation.error as Error)?.message || (startBatchImportMutation.error as Error)?.message || (startStreamImportMutation.error as Error)?.message || (clearRecordsMutation.error as Error)?.message || null;
+    const batchMutation = useStartBatchImport();
+    const streamMutation = useStartStreamImport();
+    const clearMutation = useClearRecords();
 
-    const startImport = React.useCallback(async () => {
+    // --- Derived State (Memoized) ---
+
+    const isImporting = useMemo(() => {
+        const isJobActive = activeJob
+            ? !NON_ACTIVE_STATUSES.includes(activeJob.status as any)
+            : false;
+
+        const isMutationPending = batchMutation.isPending || streamMutation.isPending;
+
+        return isJobActive || isMutationPending;
+    }, [activeJob, batchMutation.isPending, streamMutation.isPending]);
+
+    const error = useMemo(() => {
+        const errorSource =
+            jobError ||
+            batchMutation.error ||
+            streamMutation.error ||
+            clearMutation.error;
+
+        return (errorSource as Error)?.message || null;
+    }, [jobError, batchMutation.error, streamMutation.error, clearMutation.error]);
+
+    const isClearing = clearMutation.isPending;
+
+    // --- Actions ---
+
+    // 1. Shared Helper to reduce code repetition
+    const executeImportWrapper = useCallback(async (
+        mutateFn: () => Promise<{ jobId: number }>
+    ) => {
         try {
-            const data = await startImportMutation.mutateAsync();
-            navigate(`/import/${data.jobId}`);
+            const { jobId } = await mutateFn();
+            navigate(`/import/${jobId}`);
         } catch (err) {
-            console.error(err);
+            console.error('Import initiation failed:', err);
+            // Error is also captured by the `error` state above via mutation.error
         }
-    }, [startImportMutation, navigate]);
+    }, [navigate]);
 
-    const startBatchImport = React.useCallback(async () => {
-        try {
-            const data = await startBatchImportMutation.mutateAsync();
-            navigate(`/import/${data.jobId}`);
-        } catch (err) {
-            console.error(err);
-        }
-    }, [startBatchImportMutation, navigate]);
-
-    const startStreamImport = React.useCallback(async () => {
-        try {
-            const data = await startStreamImportMutation.mutateAsync();
-            navigate(`/import/${data.jobId}`);
-        } catch (err) {
-            console.error(err);
-        }
-    }, [startStreamImportMutation, navigate]);
-
-    const clearStatus = React.useCallback(() => {
+    // 2. Clear Status Action
+    const clearStatus = useCallback(() => {
         navigate('/');
-        startImportMutation.reset();
-        startBatchImportMutation.reset();
-        startStreamImportMutation.reset();
-        clearRecordsMutation.reset();
-    }, [startImportMutation, startBatchImportMutation, startStreamImportMutation, clearRecordsMutation, navigate]);
+        batchMutation.reset();
+        streamMutation.reset();
+        clearMutation.reset();
+    }, [navigate, batchMutation, streamMutation, clearMutation]);
 
-    const clearRecords = React.useCallback(async () => {
+    // 3. Public Methods
+    const startBatchImport = useCallback(() => {
+        return executeImportWrapper(() => batchMutation.mutateAsync());
+    }, [executeImportWrapper, batchMutation]);
+
+    const startStreamImport = useCallback(() => {
+        return executeImportWrapper(() => streamMutation.mutateAsync());
+    }, [executeImportWrapper, streamMutation]);
+
+    const clearRecords = useCallback(async () => {
         try {
-            await clearRecordsMutation.mutateAsync();
+            await clearMutation.mutateAsync();
             clearStatus();
         } catch (err) {
-            console.error(err);
+            console.error('Clear records failed:', err);
         }
-    }, [clearRecordsMutation, clearStatus]);
+    }, [clearMutation, clearStatus]);
 
-    const selectJob = React.useCallback((jobId: number) => {
+    const selectJob = useCallback((jobId: number) => {
         navigate(`/import/${jobId}`);
     }, [navigate]);
 
-    const value = React.useMemo(() => ({
+    // --- Context Value ---
+    const value = useMemo<ImportContextValue>(() => ({
         activeJob: activeJob || null,
         isImporting,
         isClearing,
-        error: error || null,
-        startImport,
+        error,
         startBatchImport,
         startStreamImport,
         clearRecords,
         clearStatus,
         selectJob
-    }), [activeJob, isImporting, isClearing, error, startImport, startBatchImport, startStreamImport, clearRecords, clearStatus, selectJob]);
+    }), [
+        activeJob,
+        isImporting,
+        isClearing,
+        error,
+        startBatchImport,
+        startStreamImport,
+        clearRecords,
+        clearStatus,
+        selectJob
+    ]);
 
     return (
         <ImportContext.Provider value={value}>
@@ -100,5 +138,3 @@ export const ImportProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         </ImportContext.Provider>
     );
 };
-
-

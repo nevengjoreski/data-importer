@@ -24,8 +24,7 @@ npm run dev      # Start on port 5173
 
 ### 3. Access
 - Open `http://localhost:5173`
-- Choose from three import modes:
-  - **Import (Default)**: Quick test with 1000 records
+- Choose from two import modes:
   - **Import (Batch)**: Pre-validate and bulk process
   - **Import (Stream)**: Memory-efficient CSV streaming
 
@@ -40,18 +39,14 @@ npm test  # Run Jasmine test suite
 ## Core Features
 
 ### Import Strategies
-1.  **Default Import (POST /api/import)**
-    - Quick test data import from `test-data-1000.csv`
-    - Best for: Testing, demos, small datasets
-    
-2.  **Batch Import (POST /api/import/batch)**
+1.  **Batch Import (POST /api/import/batch)**
     - Two-phase processing:
       - Phase 1: Bulk insert all records as 'pending'
       - Phase 2: Rate-limited processing
     - Validates and deduplicates upfront
     - Best for: Known datasets, maximum validation feedback
     
-3.  **Stream Import (POST /api/import/stream)**
+2.  **Stream Import (POST /api/import/stream)**
     - Streams CSV file line-by-line
     - Processes in batches of 500
     - Calculates total after completion
@@ -129,7 +124,6 @@ npm test  # Run Jasmine test suite
 
 #### Controller Layer
 - **`ImportController`**
-  - `startImport()`: Default import handler
   - `startBatchImport()`: Batch import handler
   - `startStreamImport()`: Stream import handler
   - `getHistory()`: Fetch all import jobs

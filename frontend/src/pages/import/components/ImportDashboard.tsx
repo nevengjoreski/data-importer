@@ -8,7 +8,7 @@ import { ImportStats } from './ImportStats';
 import { ErrorCategory } from '../../../lib/error-categorizer';
 
 export const ImportDashboard: React.FC = () => {
-    const { activeJob, isImporting, isClearing, startImport, startBatchImport, startStreamImport, clearRecords } = useImport();
+    const { activeJob, isImporting, isClearing, startBatchImport, startStreamImport, clearRecords } = useImport();
     const [selectedCategory, setSelectedCategory] = useState<ErrorCategory | null>(null);
 
     return (
@@ -17,7 +17,6 @@ export const ImportDashboard: React.FC = () => {
                 <ImportHeader
                     isImporting={isImporting}
                     isClearing={isClearing}
-                    onStartImport={startImport}
                     onStartBatchImport={startBatchImport}
                     onStartStreamImport={startStreamImport}
                     onClearRecords={clearRecords}

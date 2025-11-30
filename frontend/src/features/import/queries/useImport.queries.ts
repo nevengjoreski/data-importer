@@ -3,7 +3,6 @@ import {
     fetchHealth,
     fetchImportHistory,
     fetchImportJob,
-    startImportJob,
     startBatchImportJob,
     startStreamImportJob,
     clearRecords,
@@ -40,16 +39,6 @@ export const useImportJobStatus = (jobId: number | null): UseQueryResult<ImportJ
                 return false;
             }
             return POLL_INTERVALS.IMPORT_JOB;
-        },
-    });
-};
-
-export const useStartImport = (): UseMutationResult<ImportJobResponse, Error, void> => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: startImportJob,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.IMPORT_HISTORY] });
         },
     });
 };

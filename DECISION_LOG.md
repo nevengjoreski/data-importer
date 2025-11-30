@@ -113,9 +113,8 @@ Different use cases require different processing strategies. Users may want to i
 
 ### Decision
 Implemented **three distinct import modes**:
-1.  **Default Import**: Quick test data import (1000 records from test file)
-2.  **Batch Import**: Pre-load all records into DB, then process
-3.  **Stream Import**: Process CSV file in streaming mode
+1.  **Batch Import**: Pre-load all records into DB, then process
+2.  **Stream Import**: Process CSV file in streaming mode
 
 ### Rationale
 -   **Batch Mode**: Optimal for known datasets where we can validate and deduplicate upfront before rate-limited processing
@@ -410,7 +409,7 @@ const formatDuration = (seconds) => {
 Initial implementation used "Enterprise" terminology, which was unnecessarily specific.
 
 ### Decision
-Renamed all "Enterprise" references to generic "Import" (default/batch/stream).
+Renamed all "Enterprise" references to generic "Import" (batch/stream).
 
 ### Rationale
 -   **Clarity**: "Batch" and "Stream" are more descriptive than "Enterprise"
