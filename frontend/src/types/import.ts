@@ -13,6 +13,7 @@ export interface ImportJob {
     success_count: number;
     failed_count: number;
     created_at: string;
+    completedAt?: string;
     errors?: ImportError[];
 }
 

@@ -9,6 +9,7 @@ class ImportJob extends Model {
   public success_count!: number;
   public failed_count!: number;
   public created_at!: Date;
+  public completedAt!: Date | null;
 }
 
 ImportJob.init(
@@ -43,6 +44,10 @@ ImportJob.init(
       allowNull: false,
       defaultValue: 0,
     },
+    completedAt: {
+      type: DataTypes.DATE,
+      allowNull: true
+    },
     created_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
@@ -51,7 +56,9 @@ ImportJob.init(
   {
     sequelize,
     tableName: 'import_jobs',
-    timestamps: false,
+    timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: false
   }
 );
 

@@ -40,22 +40,30 @@ const ERROR_CATEGORY_CONFIGS: Record<ErrorCategory, ErrorCategoryConfig> = {
 };
 
 /**
+ * Determines the category of a single import error
+ */
+export const getErrorCategory = (error: ImportError): ErrorCategory => {
+    const msg = error.error_message.toLowerCase();
+
+    if (ERROR_PATTERNS.DUPLICATES.some((pattern) => msg.includes(pattern))) {
+        return 'duplicates';
+    } else if (ERROR_PATTERNS.MISSING.some((pattern) => msg.includes(pattern))) {
+        return 'missing';
+    } else if (ERROR_PATTERNS.INVALID.some((pattern) => msg.includes(pattern))) {
+        return 'invalid';
+    } else {
+        return 'unknown';
+    }
+};
+
+/**
  * Categorizes import errors by type
  */
 export const categorizeErrors = (errors: ImportError[]): ErrorCounts => {
     return errors.reduce(
         (acc, error) => {
-            const msg = error.error_message.toLowerCase();
-
-            if (ERROR_PATTERNS.DUPLICATES.some((pattern) => msg.includes(pattern))) {
-                acc.duplicates += 1;
-            } else if (ERROR_PATTERNS.MISSING.some((pattern) => msg.includes(pattern))) {
-                acc.missing += 1;
-            } else if (ERROR_PATTERNS.INVALID.some((pattern) => msg.includes(pattern))) {
-                acc.invalid += 1;
-            } else {
-                acc.unknown += 1;
-            }
+            const category = getErrorCategory(error);
+            acc[category] += 1;
             return acc;
         },
         { duplicates: 0, missing: 0, invalid: 0, unknown: 0 } as ErrorCounts

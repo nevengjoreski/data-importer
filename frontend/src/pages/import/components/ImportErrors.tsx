@@ -5,20 +5,30 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui
 import { ImportJob } from '../../../types/import';
 import { AlertCircle } from 'lucide-react';
 
+import { getErrorCategory, ErrorCategory } from '../../../lib/error-categorizer';
+
 interface ImportErrorsProps {
     errors?: ImportJob['errors'];
+    selectedCategory: ErrorCategory | null;
 }
 
-export const ImportErrors: React.FC<ImportErrorsProps> = ({ errors }) => {
+export const ImportErrors: React.FC<ImportErrorsProps> = ({ errors, selectedCategory }) => {
     const { t } = useTranslation();
-    if (!errors || errors.length === 0) return null;
+
+    const filteredErrors = React.useMemo(() => {
+        if (!errors) return [];
+        if (!selectedCategory) return errors;
+        return errors.filter(err => getErrorCategory(err) === selectedCategory);
+    }, [errors, selectedCategory]);
+
+    if (!filteredErrors || filteredErrors.length === 0) return null;
 
     return (
         <Card className="border-destructive/50">
             <CardHeader className="bg-destructive/10 pb-4">
                 <div className="flex items-center gap-2">
                     <AlertCircle className="h-5 w-5 text-destructive" />
-                    <CardTitle className="text-destructive">{t('dashboard.errors.title', { count: errors.length })}</CardTitle>
+                    <CardTitle className="text-destructive">{t('dashboard.errors.title', { count: filteredErrors.length })}</CardTitle>
                 </div>
             </CardHeader>
             <CardContent className="pt-6">
@@ -32,7 +42,7 @@ export const ImportErrors: React.FC<ImportErrorsProps> = ({ errors }) => {
                             </tr>
                         </thead>
                         <tbody className="[&_tr:last-child]:border-0">
-                            {errors.slice(0, 100).map((err, index) => (
+                            {filteredErrors.slice(0, 100).map((err, index) => (
                                 <tr key={err.id} className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
                                     <td className="p-4 align-middle font-medium">{index + 1}</td>
                                     <td className="p-4 align-middle font-mono text-xs">
@@ -47,10 +57,10 @@ export const ImportErrors: React.FC<ImportErrorsProps> = ({ errors }) => {
                                     </td>
                                 </tr>
                             ))}
-                            {errors.length > 100 && (
+                            {filteredErrors.length > 100 && (
                                 <tr>
                                     <td colSpan={3} className="p-4 text-center text-muted-foreground text-sm italic">
-                                        {t('dashboard.errors.more', { count: errors.length - 100 })}
+                                        {t('dashboard.errors.more', { count: filteredErrors.length - 100 })}
                                     </td>
                                 </tr>
                             )}

@@ -24,9 +24,10 @@
     },
     "progress": {
       "overall": "Overall Progress",
-      "processed": "{{current}} / {{total}} records processed",
+      "processed": "{{current}} of {{total}} records processed",
       "successful": "Successful",
-      "failed": "Failed"
+      "failed": "Failed",
+      "backToDashboard": "Back to Dashboard"
     },
     "stats": {
       "duplicates": "Duplicates",
@@ -62,7 +63,9 @@
       "processed": "Processed",
       "success": "Success",
       "failed": "Failed",
-      "createdAt": "Created At"
+      "createdAt": "Created At",
+      "completedAt": "Completed At",
+      "duration": "Duration"
     }
   },
   "status": {

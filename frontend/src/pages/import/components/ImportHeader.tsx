@@ -28,7 +28,7 @@ export const ImportHeader: React.FC<ImportHeaderProps> = ({
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('dashboard.header.title')}</h1>
                 <p className="text-gray-500">{t('dashboard.header.subtitle')}</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
                 {onClearRecords && (
                     <ActionButton
                         onClick={onClearRecords}

@@ -31,6 +31,7 @@ export class EnterpriseImportService {
             const job = await ImportJob.findByPk(jobId);
             if (job) {
                 job.status = 'failed';
+                job.completedAt = new Date();
                 await job.save();
             }
         }
@@ -59,7 +60,16 @@ export class EnterpriseImportService {
         if (batch.length > 0) {
             await this.processBatchAndInsert(jobId, batch);
         }
+        // Update total records
+        // Total = (Valid records in DB) + (Failed/Duplicate records we already counted)
+        // We must re-fetch the job to get the latest 'processed_count' (which holds our failures)
+        await job.reload();
+        const validPendingRecords = await Record.count({ where: { job_id: jobId } });
 
+        // Note: 'processed_count' at this stage contains ONLY the failures/duplicates 
+        // because the successful ones are still 'pending' in the DB waiting for processJob.
+        job.total_records = validPendingRecords + job.processed_count;
+        await job.save();
         this.processJob(jobId).catch(err => {
             console.error(`Fatal error processing job ${jobId}:`, err);
         });
@@ -104,6 +114,7 @@ export class EnterpriseImportService {
         }
 
         job.status = 'completed';
+        job.completedAt = new Date();
         await job.save();
     }
 
@@ -217,7 +228,12 @@ export class EnterpriseImportService {
             // OPTIMIZATION: Update job stats for invalids and exit
             if (failedCountToAdd > 0) {
                 const job = await ImportJob.findByPk(jobId);
-                if (job) await job.increment('failed_count', { by: failedCountToAdd });
+                if (job) {
+                    await job.increment({
+                        'failed_count': failedCountToAdd,
+                        'processed_count': failedCountToAdd
+                    });
+                }
             }
             return;
         }
@@ -268,7 +284,10 @@ export class EnterpriseImportService {
         if (failedCountToAdd > 0) {
             const job = await ImportJob.findByPk(jobId);
             if (job) {
-                await job.increment('failed_count', { by: failedCountToAdd });
+                await job.increment({
+                    'failed_count': failedCountToAdd,
+                    'processed_count': failedCountToAdd
+                });
             }
         }
 

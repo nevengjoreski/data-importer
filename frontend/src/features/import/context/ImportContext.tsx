@@ -1,7 +1,7 @@
-import React, { createContext, ReactNode, useEffect } from 'react';
+import React, { createContext, ReactNode } from 'react';
 import { ImportJob } from '../../../types/import';
 import { useImportJobStatus, useStartImport, useStartEnterpriseImport, useStartEnterpriseStreamImport, useClearRecords } from '../../import/queries/useImport.queries';
-import { STORAGE_KEYS } from '../../../constants';
+import { useNavigate, useParams } from 'react-router-dom';
 
 export interface ImportContextValue {
     activeJob: ImportJob | null;
@@ -19,10 +19,9 @@ export interface ImportContextValue {
 export const ImportContext = createContext<ImportContextValue | undefined>(undefined);
 
 export const ImportProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [activeJobId, setActiveJobId] = React.useState<number | null>(() => {
-        const stored = localStorage.getItem(STORAGE_KEYS.ACTIVE_IMPORT_JOB_ID);
-        return stored ? Number.parseInt(stored, 10) : null;
-    });
+    const navigate = useNavigate();
+    const { id } = useParams<{ id: string }>();
+    const activeJobId = id ? Number.parseInt(id, 10) : null;
 
     const { data: activeJob, error: jobError } = useImportJobStatus(activeJobId);
     const startImportMutation = useStartImport();
@@ -34,50 +33,40 @@ export const ImportProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const isClearing = clearRecordsMutation.isPending;
     const error = (jobError as Error)?.message || (startImportMutation.error as Error)?.message || (startEnterpriseImportMutation.error as Error)?.message || (startEnterpriseStreamImportMutation.error as Error)?.message || (clearRecordsMutation.error as Error)?.message || null;
 
-    useEffect(() => {
-        if (activeJob && ['completed', 'failed'].includes(activeJob.status)) {
-            localStorage.removeItem(STORAGE_KEYS.ACTIVE_IMPORT_JOB_ID);
-        }
-    }, [activeJob]);
-
     const startImport = React.useCallback(async () => {
         try {
             const data = await startImportMutation.mutateAsync();
-            setActiveJobId(data.jobId);
-            localStorage.setItem(STORAGE_KEYS.ACTIVE_IMPORT_JOB_ID, data.jobId.toString());
+            navigate(`/import/${data.jobId}`);
         } catch (err) {
             console.error(err);
         }
-    }, [startImportMutation]);
+    }, [startImportMutation, navigate]);
 
     const startEnterpriseImport = React.useCallback(async () => {
         try {
             const data = await startEnterpriseImportMutation.mutateAsync();
-            setActiveJobId(data.jobId);
-            localStorage.setItem(STORAGE_KEYS.ACTIVE_IMPORT_JOB_ID, data.jobId.toString());
+            navigate(`/import/${data.jobId}`);
         } catch (err) {
             console.error(err);
         }
-    }, [startEnterpriseImportMutation]);
+    }, [startEnterpriseImportMutation, navigate]);
 
     const startEnterpriseStreamImport = React.useCallback(async () => {
         try {
             const data = await startEnterpriseStreamImportMutation.mutateAsync();
-            setActiveJobId(data.jobId);
-            localStorage.setItem(STORAGE_KEYS.ACTIVE_IMPORT_JOB_ID, data.jobId.toString());
+            navigate(`/import/${data.jobId}`);
         } catch (err) {
             console.error(err);
         }
-    }, [startEnterpriseStreamImportMutation]);
+    }, [startEnterpriseStreamImportMutation, navigate]);
 
     const clearStatus = React.useCallback(() => {
-        localStorage.removeItem(STORAGE_KEYS.ACTIVE_IMPORT_JOB_ID);
-        setActiveJobId(null);
+        navigate('/');
         startImportMutation.reset();
         startEnterpriseImportMutation.reset();
         startEnterpriseStreamImportMutation.reset();
         clearRecordsMutation.reset();
-    }, [startImportMutation, startEnterpriseImportMutation, startEnterpriseStreamImportMutation, clearRecordsMutation]);
+    }, [startImportMutation, startEnterpriseImportMutation, startEnterpriseStreamImportMutation, clearRecordsMutation, navigate]);
 
     const clearRecords = React.useCallback(async () => {
         try {
@@ -89,9 +78,8 @@ export const ImportProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }, [clearRecordsMutation, clearStatus]);
 
     const selectJob = React.useCallback((jobId: number) => {
-        setActiveJobId(jobId);
-        localStorage.setItem(STORAGE_KEYS.ACTIVE_IMPORT_JOB_ID, jobId.toString());
-    }, []);
+        navigate(`/import/${jobId}`);
+    }, [navigate]);
 
     const value = React.useMemo(() => ({
         activeJob: activeJob || null,

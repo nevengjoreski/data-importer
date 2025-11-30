@@ -8,7 +8,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "init-db": "ts-node src/initDb.ts",
-    "test": "NODE_ENV=test jasmine --config=spec/config/jasmine.json --require=ts-node/register"
+    "test": "ts-node spec/run.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.6",

@@ -6,9 +6,11 @@ import { categorizeErrors, getErrorCategoryConfig, ErrorCategory } from '../../.
 
 interface ImportStatsProps {
     job: ImportJob;
+    selectedCategory: ErrorCategory | null;
+    onSelectCategory: (category: ErrorCategory | null) => void;
 }
 
-export const ImportStats: React.FC<ImportStatsProps> = ({ job }) => {
+export const ImportStats: React.FC<ImportStatsProps> = ({ job, selectedCategory, onSelectCategory }) => {
     const { t } = useTranslation();
 
     const errorCounts = categorizeErrors(job.errors || []);
@@ -24,6 +26,7 @@ export const ImportStats: React.FC<ImportStatsProps> = ({ job }) => {
                 icon: config.icon,
                 className: config.className,
                 bgClassName: config.bgClassName,
+                category: category // Add category to stat object for click handler
             };
         });
 
@@ -33,21 +36,28 @@ export const ImportStats: React.FC<ImportStatsProps> = ({ job }) => {
 
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {stats.map((stat) => (
-                <Card key={stat.title}>
-                    <CardHeader className="flex flex-row flex-wrap justify-center space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            {stat.title}
-                        </CardTitle>
-                        <div className={`p-2 rounded-full ${stat.bgClassName} ml-2`}>
-                            <stat.icon className={`h-4 w-4 ${stat.className}`} />
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stat.value}</div>
-                    </CardContent>
-                </Card>
-            ))}
+            {stats.map((stat) => {
+                const isSelected = selectedCategory === (stat as any).category;
+                return (
+                    <Card
+                        key={stat.title}
+                        className={`cursor-pointer transition-all hover:shadow-md ${isSelected ? 'ring-2 ring-primary' : ''}`}
+                        onClick={() => onSelectCategory(isSelected ? null : (stat as any).category)}
+                    >
+                        <CardHeader className="flex flex-row flex-wrap justify-center space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">
+                                {stat.title}
+                            </CardTitle>
+                            <div className={`p-2 rounded-full ${stat.bgClassName} ml-2`}>
+                                <stat.icon className={`h-4 w-4 ${stat.className}`} />
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{stat.value}</div>
+                        </CardContent>
+                    </Card>
+                );
+            })}
         </div>
     );
 };
