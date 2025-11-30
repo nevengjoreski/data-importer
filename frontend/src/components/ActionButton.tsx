@@ -13,9 +13,6 @@ interface ActionButtonProps {
     className?: string;
 }
 
-/**
- * Reusable action button with built-in loading state
- */
 export const ActionButton: React.FC<ActionButtonProps> = ({
     onClick,
     disabled,

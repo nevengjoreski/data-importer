@@ -9,6 +9,9 @@ import { z } from 'zod';
 import { ImportRecordData } from '../types/import';
 
 export class ImportService {
+    startImport(id: number, records: ImportRecordData[]) {
+        throw new Error('Method not implemented.');
+    }
     private static instance: ImportService;
 
     private constructor() { }
@@ -60,14 +63,9 @@ export class ImportService {
         if (batch.length > 0) {
             await this.processBatchAndInsert(jobId, batch);
         }
-        // Update total records
-        // Total = (Valid records in DB) + (Failed/Duplicate records we already counted)
-        // We must re-fetch the job to get the latest 'processed_count' (which holds our failures)
         await job.reload();
         const validPendingRecords = await Record.count({ where: { job_id: jobId } });
 
-        // Note: 'processed_count' at this stage contains ONLY the failures/duplicates 
-        // because the successful ones are still 'pending' in the DB waiting for processJob.
         job.total_records = validPendingRecords + job.processed_count;
         await job.save();
         this.processJob(jobId).catch(err => {
@@ -92,24 +90,16 @@ export class ImportService {
 
             if (pendingRecords.length === 0) break;
 
-            // OPTIMIZATION: We collect promises or modified records here
-            // We do NOT await record.save() inside the loop
             const savePromises: Promise<any>[] = [];
 
             for (const record of pendingRecords) {
-                // 1. Process logic (Wait for rate limit + API call)
-                // This updates the record object in memory
                 await this.processRecordLogic(job, record);
 
-                // 2. Queue the save operation
                 savePromises.push(record.save());
             }
 
-            // 3. Execute all DB writes in parallel for this batch
-            // This happens "outside" the rate limit wait time
             await Promise.all(savePromises);
 
-            // 4. Save Job Stats once per batch
             await job.save();
         }
 
@@ -118,12 +108,7 @@ export class ImportService {
         await job.save();
     }
 
-    /**
-     * Refactored to only handle Logic + Rate Limiting.
-     * It modifies the record instance but DOES NOT save it.
-     */
     private async processRecordLogic(job: ImportJob, record: Record) {
-        // --- STEP 1: VALIDATE ---
         const recordSchema = z.object({
             name: z.string().min(1).max(255),
             email: z.string().email(),
@@ -143,9 +128,6 @@ export class ImportService {
 
             this.markRecordFailedInMemory(job, record, errorMessage);
 
-            // We must create the ImportError here immediately, 
-            // but we can let it run in background or await it if strict safety is needed.
-            // Awaiting it is safer to prevent race conditions on job failure counts.
             await ImportError.create({
                 job_id: job.id,
                 record_data: JSON.stringify({ name: record.name, email: record.email }),
@@ -154,15 +136,12 @@ export class ImportService {
             return;
         }
 
-        // --- STEP 2: RATE LIMIT ---
         while (!rateLimiter.canProcess()) {
             const retryAfter = rateLimiter.getRetryAfter();
             await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
         }
 
-        // --- STEP 3: EXECUTE ---
         try {
-            // Simulated Success
             record.status = 'success';
             record.response = {
                 success: true,
@@ -183,7 +162,6 @@ export class ImportService {
         }
     }
 
-    // Updates state in memory, used by the batch saver later
     private markRecordFailedInMemory(job: ImportJob, record: Record, message: string) {
         record.status = 'failed';
         record.response = {
@@ -201,7 +179,6 @@ export class ImportService {
         const validRows: any[] = [];
         const invalidRows: any[] = [];
 
-        // 1. Normalize
         rows.forEach(rawRow => {
             const normalized = this.normalizeRow(rawRow);
             if (normalized?.email) {
@@ -211,7 +188,6 @@ export class ImportService {
             }
         });
 
-        // 2. Prepare Errors for invalid rows
         let failedCountToAdd = 0;
 
         if (invalidRows.length > 0) {
@@ -225,7 +201,6 @@ export class ImportService {
         }
 
         if (validRows.length === 0) {
-            // OPTIMIZATION: Update job stats for invalids and exit
             if (failedCountToAdd > 0) {
                 const job = await ImportJob.findByPk(jobId);
                 if (job) {
@@ -238,7 +213,6 @@ export class ImportService {
             return;
         }
 
-        // 3. Check Duplicates
         const batchEmails = validRows.map(r => r.email);
         const existingRecords = await Record.findAll({
             where: { email: { [Op.in]: batchEmails } },
@@ -269,7 +243,6 @@ export class ImportService {
             }
         });
 
-        // 4. Handle Duplicates
         if (duplicates.length > 0) {
             const errorData = duplicates.map(dup => ({
                 job_id: jobId,
@@ -280,7 +253,6 @@ export class ImportService {
             failedCountToAdd += duplicates.length;
         }
 
-        // 5. OPTIMIZATION: Single DB Update for all failures (Invalid + Duplicates)
         if (failedCountToAdd > 0) {
             const job = await ImportJob.findByPk(jobId);
             if (job) {
@@ -291,7 +263,6 @@ export class ImportService {
             }
         }
 
-        // 6. Bulk Create Valid
         if (recordsToInsert.length > 0) {
             await Record.bulkCreate(recordsToInsert, { ignoreDuplicates: true });
         }

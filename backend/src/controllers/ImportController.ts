@@ -181,17 +181,12 @@ export class ImportController {
 
     static async clearRecords(c: Context) {
         try {
-            // Import Record model
             const Record = (await import('../models/Record')).default;
 
-            // Delete in order to respect foreign key constraints
-            // 1. Records (references import_jobs)
             await Record.destroy({ where: {}, truncate: true });
 
-            // 2. Import Errors (references import_jobs)
             await ImportError.destroy({ where: {}, truncate: true });
 
-            // 3. Import Jobs (no dependencies)
             await ImportJob.destroy({ where: {}, truncate: true });
 
             return c.json({
