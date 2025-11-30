@@ -35,6 +35,7 @@ export const ImportDashboard: React.FC = () => {
                             <ImportErrors
                                 errors={activeJob.errors}
                                 selectedCategory={selectedCategory}
+                                onSelectCategory={setSelectedCategory}
                             />
                         </div>
                     ) : (
