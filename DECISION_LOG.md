@@ -18,6 +18,365 @@ I chose a **Backend-Driven** approach where the frontend initiates the job, and 
 -   **Complexity**: Requires setting up a job queue mechanism (simulated in-memory here) and polling from the frontend.
 -   **Feedback Latency**: The UI relies on polling (or WebSockets) to get updates, rather than knowing immediately when a request finishes.
 
+---
+
+## Three Import Strategies
+
+### Context
+Different use cases require different processing strategies. Users may want to import test data quickly, process a large batch, or stream a massive file.
+
+### Decision
+Implemented **three distinct import modes**:
+1.  **Default Import**: Quick test data import (1000 records from test file)
+2.  **Batch Import**: Pre-load all records into DB, then process
+3.  **Stream Import**: Process CSV file in streaming mode
+
+### Rationale
+-   **Batch Mode**: Optimal for known datasets where we can validate and deduplicate upfront before rate-limited processing
+-   **Stream Mode**: Handles arbitrarily large files without loading everything into memory
+-   **Flexibility**: Users can choose the appropriate strategy for their use case
+
+### Implementation
+- Separate endpoints: `/api/import`, `/api/import/batch`, `/api/import/stream`
+- Frontend button group with clear labels for each mode
+- Each mode optimized for its specific use case
+
+---
+
+## Batch Processing Strategy
+
+### Context
+For batch imports, need to efficiently handle validation, deduplication, and rate-limited processing.
+
+### Decision
+Implemented a **two-phase batch processing** approach:
+1.  **Phase 1: Bulk Insert** - Validate, deduplicate, and bulk insert all records as 'pending'
+2.  **Phase 2: Rate-Limited Processing** - Process pending records respecting rate limits
+
+### Rationale
+-   **Fast Validation**: All validation errors (missing fields, invalid emails) are caught immediately
+-   **Deduplication**: Duplicate emails are identified before any rate-limited API calls
+-   **Progress Tracking**: `processed_count` includes both successful and failed records
+-   **Efficiency**: Failed records don't consume rate limit quota
+
+### Implementation Details
+```typescript
+// Phase 1: processBatchAndInsert()
+- Normalize CSV data
+- Validate required fields
+- Check for duplicate emails
+- Bulk create valid records as 'pending'
+- Track failures (invalid/duplicate) in processed_count
+
+// Phase 2: processJob()
+- Fetch pending records in batches of 50
+- Apply rate limiting (2 req/sec)
+- Update record status to 'success' or 'failed'
+- Batch DB updates every 50 records
+```
+
+---
+
+## Stream Processing for Large Files
+
+### Context
+For massive CSV files (100k+ records), loading everything into memory is not feasible.
+
+### Decision
+Implemented **streaming CSV parsing** with incremental batch processing.
+
+### Rationale
+-   **Memory Efficient**: Processes file line-by-line
+-   **Progressive Feedback**: UI shows progress as records are streamed
+-   **Scalability**: Handles files of arbitrary size
+-   **Unknown Total**: Total record count is calculated after streaming completes
+
+### Implementation
+```typescript
+// Stream in batches of 500 records
+for await (const row of csvStream) {
+    batch.push(row);
+    if (batch.length >= 500) {
+        await processBatchAndInsert(jobId, batch);
+        batch = [];
+    }
+}
+
+// Calculate total after streaming
+job.total_records = validRecords + failedRecords;
+```
+
+---
+
+## Optimization: Batch Database Updates
+
+### Context
+Updating the `ImportJob` status after *every* single record creates massive write overhead.
+
+### Decision
+Implemented **Batch Updates** in `ImportService`. Job status is saved every 50 records (and at the end).
+
+### Rationale
+-   **Performance**: Reduces I/O operations by ~98%
+-   **Scalability**: Essential for 10k-100k records
+-   **UX**: Polling interval (1s) doesn't require sub-second precision
+
+### Implementation
+```typescript
+const savePromises: Promise<any>[] = [];
+for (const record of pendingRecords) {
+    await processRecordLogic(job, record);
+    savePromises.push(record.save());
+}
+await Promise.all(savePromises);  // Parallel DB writes
+await job.save();  // Update once per batch
+```
+
+---
+
+## URL-Based State Management
+
+### Context
+Traditional approach used `localStorage` for active job ID, but this has limitations (not shareable, no browser history).
+
+### Decision
+Migrated to **URL parameter-based routing** using `react-router-dom`.
+
+### Rationale
+-   **Shareability**: Users can share URLs to specific imports
+-   **Browser History**: Back/forward buttons work correctly
+-   **No Stale State**: Refreshing the page loads the correct job
+-   **Modern Pattern**: Standard web application practice
+
+### Implementation
+```typescript
+// Routes
+<Route path="/" element={<ImportPage />} />
+<Route path="/import/:id" element={<ImportPage />} />
+
+// Context reads from URL params
+const { id: jobId } = useParams();
+```
+
+---
+
+## Progressive UI Enhancements
+
+### Context
+Users need clear visibility into import progress, especially for streaming imports where total is unknown.
+
+### Decision
+Implemented **adaptive progress visualization**:
+1.  **Known Total**: Show percentage and green/red progress bar
+2.  **Unknown Total (Streaming)**: Show "X records processed" and success/failure ratio
+
+### Rationale
+-   **Clarity**: Users understand what's happening regardless of import mode
+-   **Visual Feedback**: Color-coded progress bar (green=success, red=failure)
+-   **Real-time Updates**: Polling every 1 second for fresh data
+
+### Implementation
+```typescript
+// Conditional rendering based on total_records
+{job.total_records > 0 
+    ? `${progressPercentage}%`
+    : `${job.processed_count} records processed`
+}
+
+// Segmented progress bar
+<div style={{ width: `${successPercentage}%` }} className="bg-green-500" />
+<div style={{ width: `${failedPercentage}%` }} className="bg-red-500" />
+```
+
+---
+
+## Interactive Error Filtering
+
+### Context
+Large imports can generate thousands of errors. Users need to quickly identify error patterns.
+
+### Decision
+Implemented **clickable error category cards** that filter the error list.
+
+### Rationale
+-   **Usability**: Users can drill down into specific error types
+-   **Pattern Recognition**: Quickly identify if errors are duplicates, missing values, or invalid format
+-   **Performance**: Limiting to 100 displayed errors prevents browser crashes
+
+### Implementation
+```typescript
+// Error categorization
+const categories = ['duplicates', 'missing', 'invalid', 'unknown'];
+
+// Clickable stats cards
+<Card onClick={() => onSelectCategory('duplicates')}>
+  <CardTitle>Duplicates</CardTitle>
+  <CardContent>{counts.duplicates}</CardContent>
+</Card>
+
+// Filtered error display
+const filtered = selectedCategory 
+    ? errors.filter(e => getErrorCategory(e) === selectedCategory)
+    : errors;
+```
+
+---
+
+## Controller-Based Architecture
+
+### Context
+Original routes file had all logic inline, making it hard to test and maintain.
+
+### Decision
+Extracted all route logic into **`ImportController` class** with static methods.
+
+### Rationale
+-   **Separation of Concerns**: Routes define API structure, controller handles business logic
+-   **Testability**: Controller methods can be unit tested independently
+-   **Maintainability**: Centralized import logic
+-   **Scalability**: Easy to add new endpoints or modify existing ones
+
+### Implementation
+```typescript
+// Clean route definitions
+importRoutes.post('/', ImportController.startImport);
+importRoutes.post('/batch', ImportController.startBatchImport);
+importRoutes.post('/stream', ImportController.startStreamImport);
+
+// Controller with business logic
+export class ImportController {
+    static async startBatchImport(c: Context) {
+        // Validation, job creation, service invocation
+    }
+}
+```
+
+---
+
+## Service Layer Pattern
+
+### Context
+Need to separate HTTP handling from core import logic.
+
+### Decision
+Created **`ImportService` singleton** that orchestrates all import processing.
+
+### Rationale
+-   **Single Responsibility**: Service focuses solely on import logic
+-   **Reusability**: Can be used from controllers, CLI tools, or scheduled jobs
+-   **Testability**: Easy to mock and test in isolation
+-   **State Management**: Singleton ensures consistent rate limiter state
+
+### Implementation
+```typescript
+export class ImportService {
+    private static instance: ImportService;
+    
+    static getInstance(): ImportService {
+        if (!ImportService.instance) {
+            ImportService.instance = new ImportService();
+        }
+        return ImportService.instance;
+    }
+    
+    async startImportBatch(jobId, records) { }
+    async startImportStream(jobId, filePath) { }
+}
+```
+
+---
+
+## Duration Tracking
+
+### Context
+Users want to know how long imports took, especially for performance analysis.
+
+### Decision
+Added `completedAt` timestamp to `ImportJob` model and display duration in history.
+
+### Rationale
+-   **Performance Metrics**: Users can track import speed
+-   **Debugging**: Helps identify bottlenecks
+-   **UX**: Shows time investment for completed jobs
+
+### Implementation
+```typescript
+// Model
+completedAt: DataTypes.DATE
+
+// Service
+job.completedAt = new Date();
+await job.save();
+
+// UI - Human-readable format
+const formatDuration = (seconds) => {
+    if (seconds < 60) return `${seconds}s`;
+    if (seconds < 3600) return `${minutes}m ${seconds % 60}s`;
+    return `${hours}h ${minutes}m`;
+};
+```
+
+---
+
+## Terminology Cleanup
+
+### Context
+Initial implementation used "Enterprise" terminology, which was unnecessarily specific.
+
+### Decision
+Renamed all "Enterprise" references to generic "Import" (default/batch/stream).
+
+### Rationale
+-   **Clarity**: "Batch" and "Stream" are more descriptive than "Enterprise"
+-   **Simplicity**: Reduces cognitive load
+-   **Consistency**: Aligns with industry-standard terminology
+
+### Changes
+- `EnterpriseImportService` → `ImportService`
+- `/api/import-enterprise` → `/api/import/batch`
+- `useStartEnterpriseImport` → `useStartBatchImport`
+
+---
+
+## Code Quality & Maintainability
+
+### Context
+Clean, maintainable code is essential for production systems.
+
+### Decision
+Performed comprehensive **code cleanup**:
+1.  Removed all unnecessary comments
+2.  Deleted unused components (`progress.tsx`)
+3.  Consistent code formatting
+4.  Self-documenting function names
+
+### Rationale
+-   **Readability**: Code should be self-explanatory
+-   **Maintenance**: Less code = fewer bugs
+-   **Performance**: Smaller bundle size
+
+---
+
+## Testing Strategy
+
+### Context
+Need confidence that the system works correctly, especially rate limiting and error handling.
+
+### Decision
+Implemented **Jasmine test suite** for backend with:
+- Service layer tests
+- Rate limiter tests
+- Database transaction tests
+
+### Rationale
+-   **Reliability**: Critical paths are tested
+-   **Regression Prevention**: Changes don't break existing functionality
+-   **Documentation**: Tests serve as usage examples
+
+### Future Work
+- Frontend component tests (Vitest + React Testing Library)
+- E2E tests for full import workflows
+
 ## Queue Strategy: In-Memory
 
 ### Context
