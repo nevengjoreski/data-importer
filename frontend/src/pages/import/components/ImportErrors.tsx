@@ -88,7 +88,7 @@ export const ImportErrors: React.FC<ImportErrorsProps> = ({ errors, selectedCate
                                         }
                                     `}
                                 >
-                                    <Icon className={`h-3.5 w-3.5 ${isActive ? config.className : 'text-gray-400'}`} />
+                                    <Icon className={`h-3.5 w-3.5 ${config.className}`} />
                                     <span>{count}</span>
                                 </button>
                             );
@@ -99,7 +99,7 @@ export const ImportErrors: React.FC<ImportErrorsProps> = ({ errors, selectedCate
             <CardContent className="pt-6">
                 <div className="rounded-md border max-h-[400px] overflow-y-auto">
                     <table className="w-full text-sm">
-                        <thead className="bg-muted/50 sticky top-0 z-10">
+                        <thead className="bg-white sticky top-0 z-10 border-b">
                             <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
                                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-12">#</th>
                                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-12"></th>

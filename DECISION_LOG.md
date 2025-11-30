@@ -20,6 +20,92 @@ I chose a **Backend-Driven** approach where the frontend initiates the job, and 
 
 ---
 
+## Retry Logic with Exponential Backoff
+
+### Context
+External APIs (or simulated APIs) can fail temporarily due to rate limits (429) or server errors (5xx). Without retry logic, transient failures cause permanent record failures.
+
+### Decision
+Implemented **automatic retry mechanism** with exponential backoff for recoverable errors:
+- **Max Retries**: 5 attempts per record
+- **Retry Conditions**: HTTP 429 (Rate Limit Exceeded) and 5xx (Server Errors)
+- **Backoff Strategy**: 
+  - Respect `Retry-After` header if present
+  - Otherwise use exponential backoff: 1s, 2s, 4s, 8s, 16s
+- **Logging**: Console warnings for each retry attempt
+
+### Rationale
+-   **Resilience**: Transient API failures (network blips, temporary overload) shouldn't cause permanent data loss
+-   **Smart Backoff**: Exponential delays prevent hammering a struggling API while still recovering quickly
+-   **Standards Compliance**: Respecting `Retry-After` header follows HTTP best practices
+-   **User Experience**: Higher success rates without manual re-imports
+
+### Implementation
+```typescript
+const MAX_RETRIES = 5;
+let attempt = 0;
+
+while (attempt < MAX_RETRIES && !success) {
+    try {
+        attempt++;
+        // Process record...
+        success = true;
+    } catch (error) {
+        if ((is429 || is5xx) && attempt < MAX_RETRIES) {
+            const waitTime = retryAfterHeader || (1000 * 2^(attempt-1));
+            await sleep(waitTime);
+            continue; // Retry
+        }
+        await failRecord(job, record, error.message);
+        return; // Permanent failure
+    }
+}
+```
+
+### Trade-offs
+-   **Processing Time**: Retries increase total import duration for jobs with many transient failures
+-   **Complexity**: More code paths to test and maintain
+-   **Resource Usage**: Failed retries consume API quota and server resources
+
+### Future Improvements
+-   Circuit breaker pattern to stop retrying if API is consistently down
+-   Configurable retry limits per job type
+-   Metrics tracking: retry success rate, average retries per record
+
+---
+
+## Refactored Error Handling
+
+### Context
+Error handling logic was duplicated across validation failures and API call failures.
+
+### Decision
+Extracted common error handling into a **`failRecord()` helper method**.
+
+### Rationale
+-   **DRY Principle**: Single place to update failure logic
+-   **Consistency**: All failures follow the same process (update record status, increment counters, log error)
+-   **Maintainability**: Easier to add features like error categorization or notifications
+
+### Implementation
+```typescript
+private async failRecord(job: ImportJob, record: Record, message: string) {
+    record.status = 'failed';
+    record.response = { success: false, error: message, timestamp: ... };
+    job.processed_count += 1;
+    job.failed_count += 1;
+    
+    await ImportError.create({
+        job_id: job.id,
+        record_data: JSON.stringify({ name, email }),
+        error_message: message
+    });
+}
+```
+
+---
+
+
 ## Three Import Strategies
 
 ### Context

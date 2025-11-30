@@ -60,6 +60,10 @@ npm test  # Run Jasmine test suite
 ### Rate Limiting
 - **Token Bucket Algorithm**: 4 burst capacity, 2/sec steady rate
 - **Intelligent Backoff**: Waits for rate limit recovery
+- **Automatic Retries**: Up to 5 retry attempts for 429/5xx errors
+  - Exponential backoff: 1s → 2s → 4s → 8s → 16s
+  - Respects `Retry-After` header when provided
+  - Logs retry attempts for debugging
 - **Error Handling**: Captures and logs individual record failures without stopping the job
 
 ### Real-Time Progress Tracking
@@ -120,7 +124,8 @@ npm test  # Run Jasmine test suite
   - `startImportStream()`: Streaming CSV processing
   - `processJob()`: Rate-limited record processing loop
   - `processBatchAndInsert()`: Validation, deduplication, bulk create
-  - `processRecordLogic()`: Individual record validation and API simulation
+  - `processRecordLogic()`: Individual record validation, retry logic, and API simulation
+  - `failRecord()`: Centralized error handling (updates status, logs errors)
 
 #### Controller Layer
 - **`ImportController`**
@@ -218,6 +223,7 @@ clearRecords()                // Delete all data
 3.  **Deduplication Pre-Check**: Hash lookup before DB query
 4.  **Streaming CSV Parsing**: Process 500 rows at a time
 5.  **Connection Pooling**: Sequelize manages DB connections
+6.  **Automatic Retries**: Exponential backoff for transient API failures (429/5xx)
 
 ### Frontend
 1.  **Limited Error Display**: Max 100 errors rendered

@@ -109,9 +109,10 @@ export class ImportService {
     }
 
     private async processRecordLogic(job: ImportJob, record: Record) {
+
         const recordSchema = z.object({
             name: z.string().min(1).max(255),
-            email: z.string().email(),
+            email: z.email(),
             company: z.string().min(1).max(255)
         });
 
@@ -126,13 +127,7 @@ export class ImportService {
                 .map(issue => `${issue.path.map(String).join('.')}: ${issue.message}`)
                 .join(', ');
 
-            this.markRecordFailedInMemory(job, record, errorMessage);
-
-            await ImportError.create({
-                job_id: job.id,
-                record_data: JSON.stringify({ name: record.name, email: record.email }),
-                error_message: errorMessage
-            });
+            await this.failRecord(job, record, errorMessage);
             return;
         }
 
@@ -141,37 +136,70 @@ export class ImportService {
             await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
         }
 
-        try {
-            record.status = 'success';
-            record.response = {
-                success: true,
-                message: 'Processed successfully',
-                timestamp: new Date().toISOString()
-            };
+        const MAX_RETRIES = 5;
+        let attempt = 0;
+        let success = false;
 
-            job.processed_count += 1;
-            job.success_count += 1;
+        while (attempt < MAX_RETRIES && !success) {
+            try {
+                attempt++;
 
-        } catch (error: any) {
-            this.markRecordFailedInMemory(job, record, error.message || 'Unknown error');
-            await ImportError.create({
-                job_id: job.id,
-                record_data: JSON.stringify({ name: record.name, email: record.email }),
-                error_message: error.message
-            });
+                record.status = 'success';
+                record.response = {
+                    success: true,
+                    message: 'Processed successfully',
+                    timestamp: new Date().toISOString()
+                };
+
+                job.processed_count += 1;
+                job.success_count += 1;
+                success = true;
+
+            } catch (error: any) {
+
+                const isRateLimit = error.response?.status === 429;
+                const isServerErr = error.response?.status >= 500;
+
+                if ((isRateLimit || isServerErr) && attempt < MAX_RETRIES) {
+                    let waitTimeMs = 1000;
+
+                    const retryHeader = error.response?.headers?.['retry-after'];
+
+                    if (retryHeader) {
+                        waitTimeMs = Number.parseInt(retryHeader, 10) * 1000;
+                    } else {
+                        waitTimeMs = 1000 * Math.pow(2, attempt - 1);
+                    }
+
+                    console.warn(`Hit 429/5xx. Retrying attempt ${attempt} in ${waitTimeMs}ms...`);
+                    await new Promise(resolve => setTimeout(resolve, waitTimeMs));
+
+                    continue;
+                }
+                await this.failRecord(job, record, error.message || 'Unknown error');
+                return;
+            }
         }
     }
 
-    private markRecordFailedInMemory(job: ImportJob, record: Record, message: string) {
+    private async failRecord(job: ImportJob, record: Record, message: string) {
         record.status = 'failed';
         record.response = {
             success: false,
             error: message,
             timestamp: new Date().toISOString()
         };
+
         job.processed_count += 1;
         job.failed_count += 1;
+
+        await ImportError.create({
+            job_id: job.id,
+            record_data: JSON.stringify({ name: record.name, email: record.email }),
+            error_message: message
+        });
     }
+
 
     private async processBatchAndInsert(jobId: number, rows: any[]) {
         if (rows.length === 0) return;
