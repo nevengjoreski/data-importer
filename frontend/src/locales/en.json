@@ -19,7 +19,9 @@
     "header": {
       "title": "Import Dashboard",
       "subtitle": "Manage and monitor data imports with real-time tracking",
-      "startImport": "Start Import (1000 Records)",
+      "startImport": "Import (Default)",
+      "startBatchImport": "Import (Batch)",
+      "startStreamImport": "Import (Stream)",
       "importing": "Importing..."
     },
     "progress": {
@@ -46,6 +48,12 @@
     },
     "startImport": "Start Import",
     "clearRecords": "Clear Records",
+    "clearConfirm": {
+      "title": "Clear All Records?",
+      "message": "This will permanently delete all import records and their associated data. This action cannot be undone.",
+      "confirm": "Yes, Clear All",
+      "cancel": "Cancel"
+    },
     "importing": "Importing...",
     "clearing": "Clearing...",
     "noActiveJob": "No active import job",

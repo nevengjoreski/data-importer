@@ -4,7 +4,6 @@ import path from 'path';
 import ImportJob from '../models/ImportJob';
 import ImportError from '../models/ImportError';
 import { importService } from '../services/ImportService';
-import { enterpriseImportService } from '../services/EnterpriseImportService';
 import { parseCSVLine } from '../utils/csvParser';
 import { ImportRecordData } from '../types/import';
 
@@ -108,7 +107,7 @@ export class ImportController {
                 status: 'pending'
             });
 
-            enterpriseImportService.startImportBatch(job.id, records);
+            importService.startImportBatch(job.id, records);
 
             return c.json({
                 success: true,
@@ -135,7 +134,7 @@ export class ImportController {
                 status: 'pending'
             });
 
-            enterpriseImportService.startImportStream(job.id, csvPath);
+            importService.startImportStream(job.id, csvPath);
 
             return c.json({
                 success: true,

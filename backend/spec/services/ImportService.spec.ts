@@ -1,4 +1,4 @@
-import { EnterpriseImportService } from '../../src/services/EnterpriseImportService';
+import { ImportService } from '../../src/services/ImportService';
 import ImportJob from '../../src/models/ImportJob';
 import Record from '../../src/models/Record';
 import ImportError from '../../src/models/ImportError';
@@ -6,11 +6,11 @@ import { rateLimiter } from '../../src/middleware/rateLimiter';
 import fs from 'fs';
 import { Readable } from 'stream';
 
-describe('EnterpriseImportService', () => {
-    let service: EnterpriseImportService;
+describe('ImportService', () => {
+    let service: ImportService;
 
     beforeEach(() => {
-        service = EnterpriseImportService.getInstance();
+        service = ImportService.getInstance();
         spyOn(ImportJob, 'findByPk').and.returnValue(Promise.resolve({
             id: 1,
             status: 'pending',

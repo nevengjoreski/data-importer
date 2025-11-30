@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useImport } from '../../../features/import/context/useImport';
 import { useImportHistory } from '../../../features/import/queries/useImport.queries';
+import { formatDuration } from '../../../lib/format-duration';
 
 export const ImportHistory: React.FC = () => {
     const { t } = useTranslation();
@@ -79,7 +80,7 @@ export const ImportHistory: React.FC = () => {
                                             <td className="px-4 py-3 text-sm text-red-600 font-medium">{job.failed_count}</td>
                                             <td className="px-4 py-3 text-sm text-gray-600">{formatDate(job.created_at)}</td>
                                             <td className="px-4 py-3 text-sm text-gray-600">{job.completedAt ? formatDate(job.completedAt) : '-'}</td>
-                                            <td className="px-4 py-3 text-sm text-gray-600">{duration !== null ? `${duration}s` : '-'}</td>
+                                            <td className="px-4 py-3 text-sm text-gray-600">{duration !== null ? formatDuration(duration) : '-'}</td>
                                         </tr>
                                     );
                                 })}

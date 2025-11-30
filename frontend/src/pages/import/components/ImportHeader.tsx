@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActionButton } from '../../../components/ActionButton';
 
@@ -6,8 +6,8 @@ interface ImportHeaderProps {
     isImporting: boolean;
     isClearing?: boolean;
     onStartImport: () => void;
-    onStartEnterpriseImport?: () => void;
-    onStartEnterpriseStreamImport?: () => void;
+    onStartBatchImport?: () => void;
+    onStartStreamImport?: () => void;
     onClearRecords?: () => void;
 }
 
@@ -15,68 +15,111 @@ export const ImportHeader: React.FC<ImportHeaderProps> = ({
     isImporting,
     isClearing,
     onStartImport,
-    onStartEnterpriseImport,
-    onStartEnterpriseStreamImport,
+    onStartBatchImport,
+    onStartStreamImport,
     onClearRecords
 }) => {
     const { t } = useTranslation();
+    const [showClearConfirm, setShowClearConfirm] = useState(false);
     const isDisabled = isImporting || (isClearing ?? false);
 
+    const handleClearClick = () => {
+        setShowClearConfirm(true);
+    };
+
+    const handleClearConfirm = () => {
+        setShowClearConfirm(false);
+        onClearRecords?.();
+    };
+
+    const handleClearCancel = () => {
+        setShowClearConfirm(false);
+    };
+
     return (
-        <div className="flex items-center justify-between mb-8">
-            <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('dashboard.header.title')}</h1>
-                <p className="text-gray-500">{t('dashboard.header.subtitle')}</p>
+        <>
+            <div className="flex items-center justify-between mb-8">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('dashboard.header.title')}</h1>
+                    <p className="text-gray-500">{t('dashboard.header.subtitle')}</p>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                    {onClearRecords && (
+                        <ActionButton
+                            onClick={handleClearClick}
+                            disabled={isDisabled}
+                            isLoading={isClearing}
+                            loadingText={t('dashboard.clearing')}
+                            variant="outline"
+                            size="lg"
+                        >
+                            {t('dashboard.clearRecords')}
+                        </ActionButton>
+                    )}
+
+                    {/* Unified Import Button Group */}
+                    <div className="flex gap-2">
+                        <ActionButton
+                            onClick={onStartImport}
+                            disabled={isDisabled}
+                            isLoading={isImporting}
+                            loadingText={t('dashboard.header.importing')}
+                            size="lg"
+                        >
+                            {t('dashboard.header.startImport')}
+                        </ActionButton>
+                        {onStartBatchImport && (
+                            <ActionButton
+                                onClick={onStartBatchImport}
+                                disabled={isDisabled}
+                                isLoading={isImporting}
+                                loadingText={t('dashboard.header.importing')}
+                                variant="secondary"
+                                size="lg"
+                            >
+                                {t('dashboard.header.startBatchImport')}
+                            </ActionButton>
+                        )}
+                        {onStartStreamImport && (
+                            <ActionButton
+                                onClick={onStartStreamImport}
+                                disabled={isDisabled}
+                                isLoading={isImporting}
+                                loadingText={t('dashboard.header.importing')}
+                                variant="secondary"
+                                size="lg"
+                            >
+                                {t('dashboard.header.startStreamImport')}
+                            </ActionButton>
+                        )}
+                    </div>
+                </div>
             </div>
-            <div className="flex gap-2 flex-wrap">
-                {onClearRecords && (
-                    <ActionButton
-                        onClick={onClearRecords}
-                        disabled={isDisabled}
-                        isLoading={isClearing}
-                        loadingText={t('dashboard.clearing')}
-                        variant="outline"
-                        size="lg"
-                    >
-                        {t('dashboard.clearRecords')}
-                    </ActionButton>
-                )}
-                {onStartEnterpriseImport && (
-                    <ActionButton
-                        onClick={onStartEnterpriseImport}
-                        disabled={isDisabled}
-                        isLoading={isImporting}
-                        loadingText={t('dashboard.header.importing')}
-                        variant="secondary"
-                        size="lg"
-                    >
-                        Start Enterprise Import (Batch)
-                    </ActionButton>
-                )}
-                {onStartEnterpriseStreamImport && (
-                    <ActionButton
-                        onClick={onStartEnterpriseStreamImport}
-                        disabled={isDisabled}
-                        isLoading={isImporting}
-                        loadingText={t('dashboard.header.importing')}
-                        variant="secondary"
-                        size="lg"
-                    >
-                        Start Enterprise Import (Stream)
-                    </ActionButton>
-                )}
-                <ActionButton
-                    onClick={onStartImport}
-                    disabled={isDisabled}
-                    isLoading={isImporting}
-                    loadingText={t('dashboard.header.importing')}
-                    size="lg"
-                    className="min-w-[200px]"
-                >
-                    {t('dashboard.header.startImport')}
-                </ActionButton>
-            </div>
-        </div>
+
+            {/* Clear Confirmation Dialog */}
+            {showClearConfirm && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+                        <h3 className="text-lg font-bold text-gray-900 mb-2">{t('dashboard.clearConfirm.title')}</h3>
+                        <p className="text-gray-600 mb-6">{t('dashboard.clearConfirm.message')}</p>
+                        <div className="flex gap-3 justify-end">
+                            <button
+                                onClick={handleClearCancel}
+                                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                            >
+                                {t('dashboard.clearConfirm.cancel')}
+                            </button>
+                            <button
+                                onClick={handleClearConfirm}
+                                className="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+                            >
+                                {t('dashboard.clearConfirm.confirm')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 };
 

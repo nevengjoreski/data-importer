@@ -39,25 +39,25 @@ export const startImportJob = async (): Promise<ImportJobResponse> => {
     return data;
 };
 
-export const startEnterpriseImportJob = async (): Promise<ImportJobResponse> => {
+export const startBatchImportJob = async (): Promise<ImportJobResponse> => {
     const response = await fetch(API_ENDPOINTS.IMPORT_ENTERPRISE_BATCH, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
     });
     if (!response.ok) {
-        throw new Error('Failed to start enterprise import');
+        throw new Error('Failed to start batch import');
     }
     const data = await response.json();
     return data;
 };
 
-export const startEnterpriseStreamImportJob = async (): Promise<ImportJobResponse> => {
+export const startStreamImportJob = async (): Promise<ImportJobResponse> => {
     const response = await fetch(API_ENDPOINTS.IMPORT_ENTERPRISE_STREAM, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
     });
     if (!response.ok) {
-        throw new Error('Failed to start enterprise stream import');
+        throw new Error('Failed to start stream import');
     }
     const data = await response.json();
     return data;

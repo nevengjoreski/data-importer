@@ -4,8 +4,8 @@ import {
     fetchImportHistory,
     fetchImportJob,
     startImportJob,
-    startEnterpriseImportJob,
-    startEnterpriseStreamImportJob,
+    startBatchImportJob,
+    startStreamImportJob,
     clearRecords,
 } from '../api/import.api';
 import { HealthCheckResponse, ImportJob, ImportJobResponse, ClearRecordsResponse } from '../../../types/import';
@@ -54,20 +54,20 @@ export const useStartImport = (): UseMutationResult<ImportJobResponse, Error, vo
     });
 };
 
-export const useStartEnterpriseImport = (): UseMutationResult<ImportJobResponse, Error, void> => {
+export const useStartBatchImport = (): UseMutationResult<ImportJobResponse, Error, void> => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: startEnterpriseImportJob,
+        mutationFn: startBatchImportJob,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.IMPORT_HISTORY] });
         },
     });
 };
 
-export const useStartEnterpriseStreamImport = (): UseMutationResult<ImportJobResponse, Error, void> => {
+export const useStartStreamImport = (): UseMutationResult<ImportJobResponse, Error, void> => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: startEnterpriseStreamImportJob,
+        mutationFn: startStreamImportJob,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.IMPORT_HISTORY] });
         },
