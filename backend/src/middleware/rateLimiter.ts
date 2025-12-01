@@ -12,12 +12,12 @@ class RateLimiter {
 
   canProcess(): boolean {
     this.refill();
-    
+
     if (this.tokens >= 1) {
       this.tokens -= 1;
       return true;
     }
-    
+
     return false;
   }
 
@@ -25,7 +25,7 @@ class RateLimiter {
     const now = Date.now();
     const timePassed = (now - this.lastRefill) / 1000; // seconds
     const tokensToAdd = timePassed * this.refillRate;
-    
+
     this.tokens = Math.min(this.maxTokens, this.tokens + tokensToAdd);
     this.lastRefill = now;
   }

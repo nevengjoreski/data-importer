@@ -8,6 +8,7 @@ const app = new Hono();
 app.use('*', cors());
 
 // API routes
+app.get('/health', (c) => c.json({ status: 'ok' }));
 app.route('/api', routes);
 
 export default app;

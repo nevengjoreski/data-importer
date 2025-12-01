@@ -1,4 +1,7 @@
 import sequelize from './database';
+import './models/Record';
+import './models/ImportJob';
+import './models/ImportError';
 
 async function initializeDatabase() {
   try {
@@ -12,6 +15,8 @@ async function initializeDatabase() {
     console.log('✅ Database initialized successfully!');
     console.log('Table created:');
     console.log('  - records: stores all imported records');
+    console.log('  - import_jobs: stores import job status');
+    console.log('  - import_errors: stores import errors');
 
     await sequelize.close();
     process.exit(0);
