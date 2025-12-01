@@ -4,7 +4,7 @@ import { rateLimiter } from '../middleware/rateLimiter';
 import Record from '../models/Record';
 import ImportJob from '../models/ImportJob';
 import ImportError from '../models/ImportError';
-import { ValidationError, Op } from 'sequelize';
+import { Op } from 'sequelize';
 import { z } from 'zod';
 import { ImportRecordData } from '../types/import';
 

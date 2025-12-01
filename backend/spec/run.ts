@@ -1,5 +1,5 @@
 import Jasmine from 'jasmine';
-import path from 'path';
+
 
 const jasmine = new Jasmine();
 
@@ -17,6 +17,8 @@ jasmine.loadConfig({
 try {
     require('./helpers/setup');
     require('./services/ImportService.spec');
+    require('./importController.spec');
+
 
     jasmine.execute();
 } catch (e) {

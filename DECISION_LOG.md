@@ -16,7 +16,7 @@ I chose a **Backend-Driven** approach where the frontend initiates the job, and 
 
 ### Trade-offs
 -   **Complexity**: Requires setting up a job queue mechanism (simulated in-memory here) and polling from the frontend.
--   **Feedback Latency**: The UI relies on polling (or WebSockets) to get updates, rather than knowing immediately when a request finishes.
+-   **Feedback Latency**: The UI relies on polling (or WebSockets - not implemented here and probably overkill for this use case) to get updates, rather than knowing immediately when a request finishes.
 
 ---
 
@@ -68,7 +68,6 @@ while (attempt < MAX_RETRIES && !success) {
 -   **Resource Usage**: Failed retries consume API quota and server resources
 
 ### Future Improvements
--   Circuit breaker pattern to stop retrying if API is consistently down
 -   Configurable retry limits per job type
 -   Metrics tracking: retry success rate, average retries per record
 
@@ -106,13 +105,13 @@ private async failRecord(job: ImportJob, record: Record, message: string) {
 ---
 
 
-## Three Import Strategies
+## Two Import Strategies
 
 ### Context
-Different use cases require different processing strategies. Users may want to import test data quickly, process a large batch, or stream a massive file.
+Different use cases require different processing strategies. Process a large batch, or stream a massive file.
 
 ### Decision
-Implemented **three distinct import modes**:
+Implemented **two distinct import modes**:
 1.  **Batch Import**: Pre-load all records into DB, then process
 2.  **Stream Import**: Process CSV file in streaming mode
 
@@ -122,7 +121,7 @@ Implemented **three distinct import modes**:
 -   **Flexibility**: Users can choose the appropriate strategy for their use case
 
 ### Implementation
-- Separate endpoints: `/api/import`, `/api/import/batch`, `/api/import/stream`
+- Separate endpoints: `/api/import/batch`, `/api/import/stream`
 - Frontend button group with clear labels for each mode
 - Each mode optimized for its specific use case
 
@@ -324,7 +323,6 @@ Extracted all route logic into **`ImportController` class** with static methods.
 ### Implementation
 ```typescript
 // Clean route definitions
-importRoutes.post('/', ImportController.startImport);
 importRoutes.post('/batch', ImportController.startBatchImport);
 importRoutes.post('/stream', ImportController.startStreamImport);
 
@@ -503,3 +501,21 @@ Limited the `ImportErrors` component to display only the **first 100 errors**.
 -   **Performance**: Prevents DOM overload and memory issues.
 -   **Usability**: Users rarely review thousands of errors one by one in a web UI. They typically check the first few to identify patterns (e.g., "invalid email format") and then fix the source file.
 -   **Alternative**: A full "Download Errors CSV" feature would be the production-grade solution for accessing all errors, but limiting the view is the correct immediate fix for UI stability.
+
+---
+
+## Testing Strategy & Cleanup
+
+### Context
+To ensure long-term maintainability and reliability, the codebase needed a comprehensive test suite and a cleanup of development artifacts.
+
+### Decision
+1.  **Added Backend Controller Tests**: Implemented unit tests for `ImportController` to verify API contract and error handling.
+2.  **Added Frontend Component Tests**: Implemented tests for `ImportPage` using Vitest and React Testing Library to verify UI states (loading, error, success).
+3.  **Removed Comments**: Stripped all explanatory comments from the source code to enforce self-documenting code practices.
+
+### Rationale
+-   **Confidence**: Tests provide a safety net for future refactoring.
+-   **Readability**: Removing comments forces code to be cleaner and variable names to be more descriptive.
+-   **Standardization**: Frontend testing infrastructure (Vitest) aligns with modern React ecosystem standards.
+

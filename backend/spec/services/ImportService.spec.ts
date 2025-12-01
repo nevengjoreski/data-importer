@@ -2,7 +2,7 @@ import { ImportService } from '../../src/services/ImportService';
 import ImportJob from '../../src/models/ImportJob';
 import Record from '../../src/models/Record';
 import ImportError from '../../src/models/ImportError';
-import { rateLimiter } from '../../src/middleware/rateLimiter';
+
 import fs from 'fs';
 import { Readable } from 'stream';
 
@@ -19,7 +19,9 @@ describe('ImportService', () => {
             failed_count: 0,
             total_records: 0,
             save: jasmine.createSpy('save'),
-            increment: jasmine.createSpy('increment')
+            increment: jasmine.createSpy('increment'),
+            reload: jasmine.createSpy('reload')
+
         } as any));
 
         spyOn(Record, 'findAll').and.returnValue(Promise.resolve([]));

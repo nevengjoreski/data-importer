@@ -5,7 +5,7 @@ import { BackendError } from '../../components/BackendError';
 import { ImportProvider } from '../../features/import/context/ImportContext';
 import { useHealthCheck } from '../../features/import/queries/useImport.queries';
 
-// --- Sub-Components ---
+
 
 const PageLoader: React.FC = () => (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -17,11 +17,10 @@ const PageLoader: React.FC = () => (
     </div>
 );
 
-// --- Main Component ---
+
 
 export function ImportPage() {
-    // Assuming useHealthCheck wraps React Query. 
-    // If it exports 'isRefetching', use that instead of local state.
+
     const { isError, isLoading, refetch } = useHealthCheck();
     const [isRetrying, setIsRetrying] = useState(false);
 
@@ -30,7 +29,7 @@ export function ImportPage() {
         try {
             await refetch();
         } finally {
-            // Ensure loading state is turned off even if refetch throws
+
             setIsRetrying(false);
         }
     }, [refetch]);

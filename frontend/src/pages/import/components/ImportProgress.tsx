@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CheckCircle2, XCircle, LucideIcon, HelpCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, LucideIcon } from 'lucide-react';
 import { Badge } from '../../../components/ui/badge';
 import { ImportJob } from '../../../types/import';
 

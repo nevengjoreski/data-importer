@@ -3,6 +3,7 @@ import { ValidationError, UniqueConstraintError } from 'sequelize';
 import Record from './models/Record';
 import { rateLimiter } from './middleware/rateLimiter';
 import importRoutes from './importRoutes';
+import { ImportController } from './controllers/ImportController';
 
 const routes = new Hono();
 
@@ -19,7 +20,7 @@ const validateRecordData = (name: unknown, email: unknown, company: unknown): st
     return 'company is required and must be a non-empty string';
   }
 
-  // Basic email validation
+
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
     return 'email must be a valid email address';
@@ -29,7 +30,7 @@ const validateRecordData = (name: unknown, email: unknown, company: unknown): st
 };
 
 routes.post('/records', async (c) => {
-  // NOTE: Rate limiter simulates external API constraints (4 burst, 2/sec steady)
+
   if (!rateLimiter.canProcess()) {
     const retryAfter = rateLimiter.getRetryAfter();
     return c.json({
@@ -51,7 +52,7 @@ routes.post('/records', async (c) => {
       name: name.trim(),
       email: email.trim().toLowerCase(),
       company: company.trim(),
-      status: 'success' // Direct creation is success
+      status: 'success'
     });
 
     return c.json({
@@ -88,10 +89,6 @@ routes.post('/records', async (c) => {
     }, 500);
   }
 });
-
-import { ImportController } from './controllers/ImportController';
-
-// ... existing code ...
 
 routes.delete('/records', ImportController.clearRecords);
 

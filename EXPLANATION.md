@@ -1,7 +1,7 @@
 # Import Dashboard Solution
 
 ## Overview
-This solution implements a **production-grade, rate-limited import system** capable of handling thousands to millions of records through three distinct import strategies: Default (test data), Batch (pre-validated), and Stream (memory-efficient). It uses a **backend-driven asynchronous processing** model optimized for scalability, reliability, and user experience.
+This solution implements a **production-grade, rate-limited import system** capable of handling thousands to millions of records through two distinct import strategies: Batch (pre-validated) and Stream (memory-efficient). It uses a **backend-driven asynchronous processing** model optimized for scalability, reliability, and user experience.
 
 ---
 
@@ -139,7 +139,6 @@ npm test  # Run Jasmine test suite
 
 #### Routes
 ```typescript
-POST   /api/import         # Default import
 POST   /api/import/batch   # Batch import
 POST   /api/import/stream  # Stream import
 GET    /api/import         # List all jobs
@@ -176,7 +175,6 @@ GET    /health             # Health check
 fetchHealth()                  // Backend health check
 fetchImportHistory()           // Get all jobs
 fetchImportJob(id)            // Get job details
-startImportJob()              // Start default import
 startBatchImportJob()         // Start batch import
 startStreamImportJob()        // Start stream import
 clearRecords()                // Delete all data
@@ -231,9 +229,16 @@ clearRecords()                // Delete all data
 ## Scalability Considerations
 
 ### Current Capacity
-- ✅ **1,000 records**: ~30 seconds (batch) / ~25 seconds (stream)
-- ✅ **10,000 records**: ~5 minutes
-- ✅ **100,000 records**: ~50 minutes (estimated)
+With a rate limit of **2 requests/second** (steady state) and **4 burst capacity**:
+
+- ✅ **1,000 records**: ~8.5 minutes (500 seconds)
+  - First 4 records: instant (burst)
+  - Remaining 996 records: 498 seconds at 2/sec
+  - Plus processing overhead
+- ✅ **10,000 records**: ~83 minutes (~1.4 hours)
+  - Calculation: (10,000 - 4) / 2 = 4,998 seconds ≈ 83 minutes
+- ✅ **100,000 records**: ~13.9 hours
+  - Calculation: (100,000 - 4) / 2 = 49,998 seconds ≈ 833 minutes ≈ 13.9 hours
 
 ### Scaling to 1M+ Records
 1.  **Replace In-Memory Queue**: Use Redis + BullMQ
@@ -255,10 +260,13 @@ clearRecords()                // Delete all data
 - ✅ Rate limiter tests (inherited from starter)
 - ✅ Database transaction tests
 
-### Frontend (Planned)
-- Vitest + React Testing Library setup ready
-- Component tests for `ImportProgress`, `ImportDashboard`
-- Hook tests for custom React Query hooks
+### Frontend (Vitest)
+- ✅ Component tests for `ImportPage`
+  - Loading state
+  - Error state with retry
+  - Dashboard rendering
+- ✅ Mocked providers and hooks for isolation
+
 
 ---
 
